@@ -8,9 +8,9 @@ function App() {
 
   return (
     <main>
-      <Navbar />
-      <HeroSection />
-      <Login />
+      <Navbar/>
+      <HeroSection/>
+      <Login/>
     </main>
 
 

@@ -12,21 +12,60 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import React from "react";
+import { useEffect, useState } from "react";
 import Course from "./Course";
+import {
+  useLoadUserQuery,
+  useUpdateUserMutation,
+} from "@/features/api/authApi";
+import { use } from "react";
+import { toast } from "sonner";
 
 const Profile = () => {
-  const isLoading = false;
-  const enrolledCourses = [1];
+  const [name, setName] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState("");
+  const { data, isLoading } = useLoadUserQuery();
+  const [
+    updateUser,
+    { data: updateUserData, isLoading: updateUserIsLoading, isError, error,isSuccess },
+  ] = useUpdateUserMutation();
 
-  
+  const onChangeHandler = (e) => {
+    const file = e.target.files[0];
+    if (file) setProfilePhoto(file);
+  };
+
+  if (isLoading) return <h1> Profile Loading...</h1>;
+
+  const { user } = data;
+
+  const updateUserHandler = async () => {
+   const formData = new FormData();
+   formData.append("name", name);
+   formData.append("profilePhoto", profilePhoto);
+   await updateUser(formData);
+  };
+
+  useEffect(()=>{
+    if(isSuccess){
+     toast.success(data.message ||"Profile Updated Successfully");
+      setProfilePhoto("");}
+      if(isError){
+        toast.success(error.message ||"failed to update profile");
+      }
+  },
+
+  [error , data ,isSuccess, isError])
   return (
     <div className="my-24 max-w-4xl mx-auto px-4 ">
       <h1 className="font-bold text-2xl text-center md:text-left">Profile</h1>
       <div className=" flex flex-col md:flex-row items-center md:items-start gap-8 my-5">
         <div className="flex flex-col items-center ">
           <Avatar className="w-24 h-24 md:h-32 md:w-32 mb-4">
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+            <AvatarImage
+              src={user.photoUrl || "https://github.com/shadcn.png"}
+              alt="@shadcn"
+            />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
         </div>
@@ -37,7 +76,7 @@ const Profile = () => {
               Name:
               <span className="font-normal text-gray-700 dark:text-gray-300 ml-2">
                 {" "}
-                Suchismita Rout
+                {user.name}
               </span>
             </h1>
           </div>
@@ -46,7 +85,7 @@ const Profile = () => {
               Email:
               <span className="font-normal text-gray-700 dark:text-gray-300 ml-2">
                 {" "}
-                suchi@gmail.comn
+                {user.email}
               </span>
             </h1>
           </div>
@@ -55,7 +94,7 @@ const Profile = () => {
               Role:
               <span className="font-normal text-gray-700 dark:text-gray-300 ml-2">
                 {" "}
-                Instructor
+                {user.role.toUpperCase()}
               </span>
             </h1>
           </div>
@@ -80,15 +119,22 @@ const Profile = () => {
                     type="text"
                     placeholder="Name"
                     className="col-span-3"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label>Profile Photo</Label>
-                  <Input type="file" accept="image/*" className="col-span-3" />
+                  <Input
+                    onChange={onChangeHandler}
+                    type="file"
+                    accept="image/*"
+                    className="col-span-3"
+                  />
                 </div>
               </div>
               <DialogFooter>
-                <Button disabled={isLoading}>
+                <Button disabled={isLoading} onClick={updateUserHandler}>
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please
@@ -106,10 +152,12 @@ const Profile = () => {
       <div>
         <h1 className="font-medium text-lg"> Courses you're enrolled in</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 my-5 ">
-          {enrolledCourses.length === 0 ? (
+          {user.enrolledcourses.length === 0 ? (
             <h1>You haven't enrolled yet </h1>
           ) : (
-            enrolledCourses.map((course, index) => <Course key={index} />)
+            user.enrolledcourses.map((course) => (
+              <Course course={course} key={course._id} />
+            ))
           )}
         </div>
       </div>
